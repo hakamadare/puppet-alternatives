@@ -32,15 +32,22 @@ Puppet::Type.type(:alternatives).provide(:dpkg) do
   # Retrieve the current path link
   def path
     name = @resource.value(:name)
-    if (attrs = self.class.all[name])
+    if (self.class.all.has_key?(name))
+      attrs = self.class.all[name]
       attrs[:path]
+    else
+      raise Puppet::Module::Error "'#{name}' is not managed by alternatives."
     end
   end
 
   # @param [String] newpath The path to use as the new alternative link
   def path=(newpath)
     name = @resource.value(:name)
-    update('--set', name, newpath)
+    if name.nil?
+      raise Puppet::Error "'#{name}' is not managed by alternatives."
+    else
+      update('--set', name, newpath)
+    end
   end
 
   # @return [String] The alternative mode

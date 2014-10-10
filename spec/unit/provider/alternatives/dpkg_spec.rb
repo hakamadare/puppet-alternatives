@@ -45,23 +45,46 @@ describe Puppet::Type.type(:alternatives).provider(:dpkg) do
   end
 
   describe 'instances' do
-    subject { described_class.new(:name => 'editor') }
+    describe 'editor' do
+      subject { described_class.new(:name => 'editor') }
 
-    let(:resource) { Puppet::Type.type(:alternatives).new(:name => 'editor') }
+      let(:resource) { Puppet::Type.type(:alternatives).new(:name => 'editor') }
 
-    before do
-      Puppet::Type.type(:alternatives).stubs(:defaultprovider).returns described_class
-      resource.provider = subject
-      described_class.stubs(:all).returns(stub_selections)
+      before do
+        Puppet::Type.type(:alternatives).stubs(:defaultprovider).returns described_class
+        resource.provider = subject
+        described_class.stubs(:all).returns(stub_selections)
+      end
+
+      it "#path retrieves the path from class.all" do
+        subject.path.should == '/usr/bin/vim.tiny'
+      end
+
+      it "#path= updates the path with update-alternatives --set" do
+        subject.expects(:update).with('--set', 'editor', '/bin/nano')
+        subject.path = '/bin/nano'
+      end
     end
 
-    it "#path retrieves the path from class.all" do
-      subject.path.should == '/usr/bin/vim.tiny'
-    end
+    describe 'nonexistent' do
+      subject { described_class.new(:name => 'nonexistent') }
 
-    it "#path= updates the path with update-alternatives --set" do
-      subject.expects(:update).with('--set', 'editor', '/bin/nano')
-      subject.path = '/bin/nano'
+      let(:resource) { Puppet::Type.type(:alternatives).new(:name => 'nonexistent') }
+
+      before do
+        Puppet::Type.type(:alternatives).stubs(:defaultprovider).returns described_class
+        resource.provider = subject
+        described_class.stubs(:all).returns(stub_selections)
+      end
+
+      it "#path does not retrieve the path from class.all" do
+        subject.path.should raise_error(Puppet::ParseError)
+      end
+
+      it "#path= updates the path with update-alternatives --set" do
+        subject.expects(:update).with('--set', 'editor', '/bin/nano')
+        subject.path = '/bin/nano'
+      end
     end
   end
 end
